@@ -7,6 +7,8 @@ var {UserModel} = require('./models/user');
 var app = express();
 var PORT = process.env.PORT || 3000;
 
+mongoose.Promise = Promise;
+
 app.use(body_parser.json());
 app.use(body_parser.urlencoded({extended:false}));
 
@@ -19,6 +21,12 @@ app.post('/todos', (req, res) =>{
    todo.save().then((result)=>{
     res.status(200).json(result);
    }).catch((e)=> res.status(400).send(e));
+});
+
+app.get('/todos', (req, res) => {
+    TodoModel.find().then((result) => {
+        res.json({todos: result});
+    }).catch((e) => res.status(400).send(e));
 });
 
 app.listen(PORT, () => {
