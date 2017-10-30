@@ -3,10 +3,18 @@ var request = require('supertest');
 var { app } = require('../server');
 var { TodoModel } = require('../models/todo');
 
+const todos = [{
+    text: 'First Todo'
+},{
+    text: 'Second Todo'
+}];
+
 beforeEach((done) => {
-    TodoModel.remove({}).then(() => done());
+    TodoModel.remove({}).then(()=>{
+        TodoModel.insertMany(todos);
+    }).then(() => done());
 });
-describe('Todos api', () => {
+describe('POST /todos', () => {
     text_test1 = "this is a mocha test";
     it('should create a new todo', (done) => {
         request(app)
@@ -20,7 +28,7 @@ describe('Todos api', () => {
                 if (err){
                     return done(err);
                 }
-                TodoModel.find().then((todos) => {
+                TodoModel.find({text: text_test1}).then((todos) => {
                     expect(todos.length).toBe(1);
                     expect(todos[0].text).toEqual(text_test1);
                     done();
@@ -39,10 +47,27 @@ describe('Todos api', () => {
                 return done(err);
             }
             TodoModel.find().then((todos) => {
-                expect(todos.length).toBe(0);
+                expect(todos.length).toBe(2);
                 done();
             }).catch((err) => console.log(err));
         });
-    })
+    });
 });
 
+describe('GET /todos', (done) => {
+    //it('should get all todos', () => {
+    //    request(app)
+    //    .get('/todos',(err, res)=> {
+    //        expect(res.body.todos.length).toBe(2);
+    //    })
+    //    .end(done);
+    //});
+    it('should get all todos', () => {
+        request(app)
+            .get('/todos')
+            .end((err, res) => {
+                expect(res.body.todos.length).toBe(2);
+                done();
+            });
+    });
+});
