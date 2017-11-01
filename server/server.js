@@ -1,8 +1,9 @@
 var express = require('express');
 var body_parser = require('body-parser');
 var mongoose = require('./db/mongoose').mongoose;
-var {TodoModel} = require('./models/todo');
-var {UserModel} = require('./models/user');
+var { ObjectID } = require('mongodb');
+var { TodoModel } = require('./models/todo');
+var { UserModel } = require('./models/user');
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -10,23 +11,44 @@ var PORT = process.env.PORT || 3000;
 mongoose.Promise = Promise;
 
 app.use(body_parser.json());
-app.use(body_parser.urlencoded({extended:false}));
+app.use(body_parser.urlencoded({ extended: false }));
 
-app.post('/todos', (req, res) =>{
-   console.log(req.body); 
-   var todo = new TodoModel({
-       text : req.body.text
-   });
+app.post('/todos', (req, res) => {
+    console.log(req.body);
+    var todo = new TodoModel({
+        text: req.body.text
+    });
 
-   todo.save().then((result)=>{
-    res.status(200).json(result);
-   }).catch((e)=> res.status(400).send(e));
+    todo.save().then((result) => {
+        res.status(200).json(result);
+    }).catch((e) => res.status(400).send(e));
 });
 
 app.get('/todos', (req, res) => {
     TodoModel.find().then((result) => {
-        res.json({todos: result});
+        res.json({ todos: result });
     }).catch((e) => res.status(400).send(e));
+});
+
+app.get('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    //validate id => 404 => empty body
+    var valid = ObjectID.isValid(id);
+    if (!valid) {
+        res.status(404).json({ error_message: "ID is not valid" });
+    } else {
+        //query db success (todo vs !todo(404)) vs errorr (400)
+        TodoModel.findById(id).then((todo) => {
+            console.log("Requested item:\n", todo);
+            if (todo === null) {
+                res.status(404).json({ error_message: "No maches found" });
+            } else {
+                res.json({ todos: [todo ]});
+            }
+        }).catch((error) => {
+            res.status(400).send(error);
+        });
+    }
 });
 
 app.listen(PORT, () => {
