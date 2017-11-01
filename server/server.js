@@ -39,11 +39,11 @@ app.get('/todos/:id', (req, res) => {
     } else {
         //query db success (todo vs !todo(404)) vs errorr (400)
         TodoModel.findById(id).then((todo) => {
-            console.log("Requested item:\n", todo);
+            //console.log("Requested item:\n", todo);
             if (todo === null) {
                 res.status(404).json({ error_message: "No maches found" });
             } else {
-                res.json({ todos: [todo ]});
+                res.json({ todo: todo });
             }
         }).catch((error) => {
             res.status(400).send(error);

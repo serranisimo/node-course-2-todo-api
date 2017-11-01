@@ -2,10 +2,13 @@ var expect = require('expect');
 var request = require('supertest');
 var { app } = require('../server');
 var { TodoModel } = require('../models/todo');
-
+var { ObjectID } = require('mongodb');
+ 
 const todos = [{
+    _id: new ObjectID(),
     text: 'First Todo'
-},{
+}, {
+    _id: new ObjectID(),
     text: 'Second Todo'
 }];
 
@@ -62,12 +65,44 @@ describe('GET /todos', (done) => {
     //    })
     //    .end(done);
     //});
-    it('should get all todos', () => {
+    it('should get all todos', (done) => {
         request(app)
             .get('/todos')
             .end((err, res) => {
                 expect(res.body.todos.length).toBe(2);
                 done();
             });
+    });
+});
+
+describe('GET /todos/:id',()=>{
+    it('should return todo doc', (done) => {
+        let id = todos[0]._id.toHexString();
+        request(app)
+            .get(`/todos/${id}`)
+            .expect(200)
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+                expect(res.body.todo.text).toEqual(todos[0].text);
+                done();
+            });
+    });
+
+    it('should return 404 if resource not found', (done) => {
+        let id = "5123321321564a";
+        request(app)
+            .get(`/todos/${id}`)
+            .expect(404)
+            .end(done);
+    });
+
+    it('should return 404 if for non-object ids', (done) => {
+        let id = new ObjectID().toHexString();
+        request(app)
+            .get(`/todos/${id}`)
+            .expect(404)
+            .end(done);
     });
 });
