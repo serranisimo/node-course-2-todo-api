@@ -51,6 +51,23 @@ app.get('/todos/:id', (req, res) => {
     }
 });
 
+app.delete('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+        res.status(404).json({ error_message: "ID is not valid" });
+    }
+    TodoModel.findByIdAndRemove(id).then((result) => {
+        if (result === null) {
+            res.status(404).json({ error_message: "Dataset not found" });
+        } else {
+            res.status(200).json({ deleted_todo: result });
+        }
+    }).catch((err) => {
+        res.status(400).send(error);
+    })
+
+});
+
 app.listen(PORT, () => {
     console.log(`Started on port ${PORT}`);
 });
