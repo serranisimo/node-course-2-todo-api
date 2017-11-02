@@ -120,8 +120,7 @@ describe('DELETE /todos/:id', () => {
                     done(err);
                 }
                 TodoModel.findById(id).then((result) => {
-                    expect(result).toEqual(null);
-                    expect(result).toNotExist();
+                    expect(result).toBeNull();
                     done();
                 }).catch((error) => {
                     done(error); 
