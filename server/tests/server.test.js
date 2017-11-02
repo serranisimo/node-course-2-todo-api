@@ -106,3 +106,54 @@ describe('GET /todos/:id',()=>{
             .end(done);
     });
 });
+
+describe('DELETE /todos/:id', () => {
+    it('should remove a todo', (done) => {
+        var id = todos[1]._id.toHexString();
+        request(app).delete(`/todos/${id}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.deleted_todo._id).toEqual(id);
+            })
+            .end((err) => { 
+                if (err) {
+                    done(err);
+                }
+                TodoModel.findById(id).then((result) => {
+                    expect(result).toEqual(null);
+                    expect(result).toNotExist();
+                    done();
+                }).catch((error) => {
+                    done(error); 
+                });
+            });
+    });
+
+    it('should return 404 if object not found', (done) => {
+        var id = new ObjectID;
+        request(app).delete(`/todos/${id}`)
+            .expect(404)
+            .end((err, res) => {
+                if (err) {
+                    done(err);
+                }
+                expect(res.body.error_message)
+                    .toEqual("Dataset not found");      
+                done();
+            });
+    });
+
+    it('should return 404 if object invalid', (done) => {
+        var id = "654123sss";
+        request(app).delete(`/todos/${id}`)
+            .expect(404)
+            .end((err, res) => {
+                if (err) {
+                    done(err);
+                } 
+                expect(res.body.error_message)
+                    .toEqual("ID is not valid");   
+                done();            
+            });
+    });
+});
