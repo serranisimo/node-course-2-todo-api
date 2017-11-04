@@ -1,9 +1,10 @@
-var express = require('express');
-var body_parser = require('body-parser');
-var mongoose = require('./db/mongoose').mongoose;
-var { ObjectID } = require('mongodb');
-var { TodoModel } = require('./models/todo');
-var { UserModel } = require('./models/user');
+const express = require('express');
+const body_parser = require('body-parser');
+const mongoose = require('./db/mongoose').mongoose;
+const _ = require('lodash');
+const { ObjectID } = require('mongodb');
+const { TodoModel } = require('./models/todo');
+const { UserModel } = require('./models/user');
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -66,6 +67,31 @@ app.delete('/todos/:id', (req, res) => {
         res.status(400).send(error);
     })
 
+});
+
+app.patch('/todos/:id', (req , res) => {
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+        res.status(404).json({ error_message: "ID is not valid" });
+    }
+    var body = _.pick(req.body, ['text', 'completed', 'completedAt']);
+    if(_.isBoolean(body.completed) && body.completed === true){
+        body.completedAt = new Date().getTime();
+    }else{
+        body.completed =false;
+        body.completedAt = null;
+    }
+
+    TodoModel.findByIdAndUpdate(id, {$set:body}, {new:true})
+    .then((result)=>{
+        if (result === null) {
+            res.status(404).json({ error_message: "Dataset not found" });
+        } else {
+            res.status(200).json({ todo: result });
+        }
+    }).catch((err) => {
+        res.status(400).send(error);
+    })
 });
 
 app.listen(PORT, () => {
