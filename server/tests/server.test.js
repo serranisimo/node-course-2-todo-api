@@ -9,13 +9,19 @@ const todos = [{
     text: 'First Todo'
 }, {
     _id: new ObjectID(),
-    text: 'Second Todo'
+    text: 'Second Todo',
+    completed: true,
+    completedAt: 333
 }];
 
 beforeEach((done) => {
     TodoModel.remove({}).then(()=>{
         TodoModel.insertMany(todos);
-    }).then(() => done());
+    }).then((result) => 
+    {
+        // todos[1].completedAt = result.completedAt;
+        done()
+    });
 });
 describe('POST /todos', () => {
     text_test1 = "this is a mocha test";
@@ -145,6 +151,95 @@ describe('DELETE /todos/:id', () => {
     it('should return 404 if object invalid', (done) => {
         var id = "654123sss";
         request(app).delete(`/todos/${id}`)
+            .expect(404)
+            .end((err, res) => {
+                if (err) {
+                    done(err);
+                } 
+                expect(res.body.error_message)
+                    .toEqual("ID is not valid");   
+                done();            
+            });
+    });
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update a todo', (done) => {
+        var id = todos[0]._id.toHexString();
+        var update = {
+            text: "Update test" ,
+            completed : true
+        };
+        request(app).patch(`/todos/${id}`)
+            .send(update)
+            .expect(200)
+            .expect((res) => {//check response
+                expect(res.body.todo._id).toEqual(id);              
+                expect(res.body.todo).toEqual(expect.objectContaining(update));
+                expect(typeof res.body.todo.completedAt).toBe("number");
+            })
+            .end((err) => { 
+                if (err) {
+                    done(err);
+                }
+                TodoModel.findById(id).then((result) => {      
+                    // //check DB against changes            
+                    // expect(result.text).toBe(update.text);
+                    // expect(result.completed).toBe(update.completed);
+                    // expect(typeof result.completedAt).toBe("number");
+                    expect(result).toEqual(expect.objectContaining(update));
+                    done();
+                }).catch((error) => {
+                    done(error); 
+                });
+            });
+    });
+
+    it('should clear completedAt if todo is not completed', (done) => {
+        var id = todos[1]._id.toHexString();
+        var update = {
+            text:"Second text update",
+            completed: !todos[1].completed 
+        }
+        request(app).patch(`/todos/${id}`)
+            .send(update)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo._id).toEqual(id);
+                expect(res.body.todo).toEqual(expect.objectContaining(update));
+            })
+            .end((err) => { 
+                if (err) {
+                    done(err);
+                }
+                TodoModel.findById(id).then((result) => {
+                    // expect(result).toMatchObject(update);  
+                    expect(result).toEqual(expect.objectContaining(update));
+                    expect(result.completedAt).toBeNull();
+                    done();
+                }).catch((error) => {
+                    done(error); 
+                });
+            });
+    });
+
+    it('should return 404 if object not found', (done) => {
+        var id = new ObjectID;
+        request(app).patch(`/todos/${id}`)
+            .expect(404)
+            .end((err, res) => {
+                if (err) {
+                    done(err);
+                }
+                expect(res.body.error_message)
+                    .toEqual("Dataset not found");      
+                done();
+            });
+    });
+
+    it('should return 404 if object invalid', (done) => {
+        var id = "654123sss";
+        request(app).patch(`/todos/${id}`)
             .expect(404)
             .end((err, res) => {
                 if (err) {
