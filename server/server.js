@@ -1,3 +1,5 @@
+require('./../config/config');
+/**Imports */
 const express = require('express');
 const body_parser = require('body-parser');
 const mongoose = require('./db/mongoose').mongoose;
@@ -5,9 +7,9 @@ const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const { TodoModel } = require('./models/todo');
 const { UserModel } = require('./models/user');
-
+/**Routes and Handles */
 var app = express();
-var PORT = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 mongoose.Promise = Promise;
 
@@ -94,8 +96,8 @@ app.patch('/todos/:id', (req , res) => {
     })
 });
 
-app.listen(PORT, () => {
-    console.log(`Started on port ${PORT}`);
+app.listen(port, () => {
+    console.log(`Started on port ${port}`);
 });
 
 module.exports = { app };
