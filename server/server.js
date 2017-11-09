@@ -17,7 +17,7 @@ app.use(body_parser.json());
 app.use(body_parser.urlencoded({ extended: false }));
 
 app.post('/todos', (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     var todo = new TodoModel({
         text: req.body.text
     });
@@ -96,6 +96,15 @@ app.patch('/todos/:id', (req , res) => {
     })
 });
 
+// POST /users
+app.post('/users', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    var user = new UserModel(body);
+
+    user.save().then((result) => {
+        res.status(200).json(result);
+    }).catch((e) => res.status(400).send(e));
+});
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
 });
