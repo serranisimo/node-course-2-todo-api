@@ -18,6 +18,6 @@ var todoSchema = new Schema({
         default: null
     }
 });
-var TodoModel = mongoose.model('Todo', todoSchema);
+var Todo = mongoose.model('Todo', todoSchema);
 
-module.exports = {TodoModel};
+module.exports = {Todo};

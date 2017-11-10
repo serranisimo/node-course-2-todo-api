@@ -5,8 +5,8 @@ const body_parser = require('body-parser');
 const mongoose = require('./db/mongoose').mongoose;
 const _ = require('lodash');
 const { ObjectID } = require('mongodb');
-const { TodoModel } = require('./models/todo');
-const { UserModel } = require('./models/user');
+const { Todo } = require('./models/todo');
+const { User } = require('./models/user');
 /**Routes and Handles */
 var app = express();
 const port = process.env.PORT;
@@ -18,7 +18,7 @@ app.use(body_parser.urlencoded({ extended: false }));
 
 app.post('/todos', (req, res) => {
     // console.log(req.body);
-    var todo = new TodoModel({
+    var todo = new Todo({
         text: req.body.text
     });
 
@@ -28,7 +28,7 @@ app.post('/todos', (req, res) => {
 });
 
 app.get('/todos', (req, res) => {
-    TodoModel.find().then((result) => {
+    Todo.find().then((result) => {
         res.json({ todos: result });
     }).catch((e) => res.status(400).send(e));
 });
@@ -41,7 +41,7 @@ app.get('/todos/:id', (req, res) => {
         res.status(404).json({ error_message: "ID is not valid" });
     } else {
         //query db success (todo vs !todo(404)) vs errorr (400)
-        TodoModel.findById(id).then((todo) => {
+        Todo.findById(id).then((todo) => {
             //console.log("Requested item:\n", todo);
             if (todo === null) {
                 res.status(404).json({ error_message: "No maches found" });
@@ -59,7 +59,7 @@ app.delete('/todos/:id', (req, res) => {
     if (!ObjectID.isValid(id)) {
         res.status(404).json({ error_message: "ID is not valid" });
     }
-    TodoModel.findByIdAndRemove(id).then((result) => {
+    Todo.findByIdAndRemove(id).then((result) => {
         if (result === null) {
             res.status(404).json({ error_message: "Dataset not found" });
         } else {
@@ -67,7 +67,7 @@ app.delete('/todos/:id', (req, res) => {
         }
     }).catch((err) => {
         res.status(400).send(error);
-    })
+    });
 
 });
 
@@ -84,7 +84,7 @@ app.patch('/todos/:id', (req , res) => {
         body.completedAt = null;
     }
 
-    TodoModel.findByIdAndUpdate(id, {$set:body}, {new:true})
+    Todo.findByIdAndUpdate(id, {$set:body}, {new:true})
     .then((result)=>{
         if (result === null) {
             res.status(404).json({ error_message: "Dataset not found" });
@@ -99,12 +99,16 @@ app.patch('/todos/:id', (req , res) => {
 // POST /users
 app.post('/users', (req, res) => {
     var body = _.pick(req.body, ['email', 'password']);
-    var user = new UserModel(body);
-
-    user.save().then((result) => {
-        res.status(200).json(result);
+    var user = new User(body);
+    
+    user.save()
+    .then((result) => {
+        return user.generateAuthToken();
+    }).then((token) => {
+        res.status(200).header('x-auth', token).json(user);
     }).catch((e) => res.status(400).send(e));
 });
+
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
 });
