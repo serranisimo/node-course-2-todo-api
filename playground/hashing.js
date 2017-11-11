@@ -1,5 +1,26 @@
 const {SHA256} = require('crypto-js');
+const bcrypt = require('bcryptjs');
 
+/**
+ * Trying password hashing with bcryptjs
+ */
+var password = '123abc';
+// bcrypt.genSalt(10);
+bcrypt.genSalt(10, (err, salt) => {
+    bcrypt.hash(password, salt, (err, hash) => {
+        console.log("\n")
+        console.log(hash);        
+    });
+});
+var hashedPsw = '$2a$10$MIP0Qw3.rawa4NFgDPg5Oem4BAxWNt8c4WwFBn1fxPqqOa.cf.f/m';
+bcrypt.compare(password, hashedPsw)
+    .then((result) => console.log("hash truthful?",result))
+    .catch((e) => console(e));
+/**
+ * ------------------------------------------------------------------------------
+ * Trying standard hashing with SHA256
+ * ------------------------------------------------------------------------------
+ */
 var message = "I am user number 3";
 var hash = SHA256(message).toString();
 
