@@ -3,6 +3,9 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 
+
+const secret_value = "abc";
+
 var Schema = mongoose.Schema;
 var UserSchema = new Schema({
     email:{
@@ -44,7 +47,6 @@ UserSchema.methods.toJSON = function () {
 UserSchema.methods.generateAuthToken = function () {
     var user = this;
     var access = 'auth';
-    var secret_value = "abc";
     var token = jwt.sign({
         _id: user._id.toHexString(),
         access
@@ -57,6 +59,24 @@ UserSchema.methods.generateAuthToken = function () {
     //this just returns a promise which can be chained witha new then()
     return user.save().then((result) => {
         return token;
+    });
+};
+/**
+ * returns a promise
+ */
+UserSchema.statics.findByToken = function(token){
+    //this is a static method!!!! variable in Upper case
+    var User = this;
+    try{
+        var decoded = jwt.verify(token, secret_value);
+    } catch (e) {
+        return Promise.reject();
+        console.log(`Error while verifying jwt: ${e}`);
+    }
+    return User.find({
+        _id: decoded._id,
+        'tokens.token': token,
+        'tokens.access': 'auth'
     });
 };
 

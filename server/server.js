@@ -10,6 +10,7 @@ const { User } = require('./models/user');
 /**Routes and Handles */
 var app = express();
 const port = process.env.PORT;
+var {authenticate} = require('./middleware/authenticate');
 
 mongoose.Promise = Promise;
 
@@ -71,42 +72,46 @@ app.delete('/todos/:id', (req, res) => {
 
 });
 
-app.patch('/todos/:id', (req , res) => {
+app.patch('/todos/:id', (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         res.status(404).json({ error_message: "ID is not valid" });
     }
     var body = _.pick(req.body, ['text', 'completed', 'completedAt']);
-    if(_.isBoolean(body.completed) && body.completed === true){
+    if (_.isBoolean(body.completed) && body.completed === true) {
         body.completedAt = new Date().getTime();
-    }else{
-        body.completed =false;
+    } else {
+        body.completed = false;
         body.completedAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, {$set:body}, {new:true})
-    .then((result)=>{
-        if (result === null) {
-            res.status(404).json({ error_message: "Dataset not found" });
-        } else {
-            res.status(200).json({ todo: result });
-        }
-    }).catch((err) => {
-        res.status(400).send(error);
-    })
+    Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+        .then((result) => {
+            if (result === null) {
+                res.status(404).json({ error_message: "Dataset not found" });
+            } else {
+                res.status(200).json({ todo: result });
+            }
+        }).catch((err) => {
+            res.status(400).send(error);
+        })
 });
 
 // POST /users
 app.post('/users', (req, res) => {
     var body = _.pick(req.body, ['email', 'password']);
     var user = new User(body);
-    
+
     user.save()
-    .then((result) => {
-        return user.generateAuthToken();
-    }).then((token) => {
-        res.status(200).header('x-auth', token).json(user);
-    }).catch((e) => res.status(400).send(e));
+        .then((result) => {
+            return user.generateAuthToken();
+        }).then((token) => {
+            res.status(200).header('x-auth', token).json(user);
+        }).catch((e) => res.status(400).send(e));
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
 });
 
 app.listen(port, () => {
