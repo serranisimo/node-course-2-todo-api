@@ -1,43 +1,46 @@
+var {User} = require('./../models/user');
+var {Todos} = require('./../models/todo');
 var expect = require('expect');
 var request = require('supertest');
-var { app } = require('../server');
-var { TodoModel } = require('../models/todo');
-var { ObjectID } = require('mongodb');
- 
-const todos = [{
-    _id: new ObjectID(),
-    text: 'First Todo'
-}, {
-    _id: new ObjectID(),
-    text: 'Second Todo',
-    completed: true,
-    completedAt: 333
-}];
+var {
+    app
+} = require('../server');
+var {
+    Todo
+} = require('../models/todo');
+var {
+    ObjectID
+} = require('mongodb');
 
-beforeEach((done) => {
-    TodoModel.remove({}).then(()=>{
-        TodoModel.insertMany(todos);
-    }).then((result) => 
-    {
-        // todos[1].completedAt = result.completedAt;
-        done()
-    });
-});
+const {
+    todos,
+    populateTodos,
+    users,
+    populateUsers
+} = require('./seed/seed');
+
+beforeEach(populateUsers);
+beforeEach(populateTodos);
+
 describe('POST /todos', () => {
     text_test1 = "this is a mocha test";
     it('should create a new todo', (done) => {
         request(app)
             .post('/todos')
-            .send({text: text_test1})
+            .send({
+                text: text_test1
+            })
             .expect(200)
             .expect((res) => {
                 expect(res.body.text).toBe(text_test1);
             })
             .end((err, res) => {
-                if (err){
+                if (err) {
                     return done(err);
                 }
-                TodoModel.find({text: text_test1}).then((todos) => {
+                Todo.find({
+                    text: text_test1
+                }).then((todos) => {
                     expect(todos.length).toBe(1);
                     expect(todos[0].text).toEqual(text_test1);
                     done();
@@ -49,17 +52,19 @@ describe('POST /todos', () => {
         text = "";
         request(app)
             .post('/todos')
-            .send({ text: text })
+            .send({
+                text: text
+            })
             .expect(400)
-        .end((err, res) => {
-            if (err) {
-                return done(err);
-            }
-            TodoModel.find().then((todos) => {
-                expect(todos.length).toBe(2);
-                done();
-            }).catch((err) => console.log(err));
-        });
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+                Todo.find().then((todos) => {
+                    expect(todos.length).toBe(2);
+                    done();
+                }).catch((err) => console.log(err));
+            });
     });
 });
 
@@ -81,7 +86,7 @@ describe('GET /todos', (done) => {
     });
 });
 
-describe('GET /todos/:id',()=>{
+describe('GET /todos/:id', () => {
     it('should return todo doc', (done) => {
         let id = todos[0]._id.toHexString();
         request(app)
@@ -121,15 +126,15 @@ describe('DELETE /todos/:id', () => {
             .expect((res) => {
                 expect(res.body.deleted_todo._id).toEqual(id);
             })
-            .end((err) => { 
+            .end((err) => {
                 if (err) {
                     done(err);
                 }
-                TodoModel.findById(id).then((result) => {
+                Todo.findById(id).then((result) => {
                     expect(result).toBeNull();
                     done();
                 }).catch((error) => {
-                    done(error); 
+                    done(error);
                 });
             });
     });
@@ -143,7 +148,7 @@ describe('DELETE /todos/:id', () => {
                     done(err);
                 }
                 expect(res.body.error_message)
-                    .toEqual("Dataset not found");      
+                    .toEqual("Dataset not found");
                 done();
             });
     });
@@ -155,10 +160,10 @@ describe('DELETE /todos/:id', () => {
             .end((err, res) => {
                 if (err) {
                     done(err);
-                } 
+                }
                 expect(res.body.error_message)
-                    .toEqual("ID is not valid");   
-                done();            
+                    .toEqual("ID is not valid");
+                done();
             });
     });
 });
@@ -167,22 +172,22 @@ describe('PATCH /todos/:id', () => {
     it('should update a todo', (done) => {
         var id = todos[0]._id.toHexString();
         var update = {
-            text: "Update test" ,
-            completed : true
+            text: "Update test",
+            completed: true
         };
         request(app).patch(`/todos/${id}`)
             .send(update)
             .expect(200)
-            .expect((res) => {//check response
-                expect(res.body.todo._id).toEqual(id);              
+            .expect((res) => { //check response
+                expect(res.body.todo._id).toEqual(id);
                 expect(res.body.todo).toEqual(expect.objectContaining(update));
                 expect(typeof res.body.todo.completedAt).toBe("number");
             })
-            .end((err) => { 
+            .end((err) => {
                 if (err) {
                     done(err);
                 }
-                TodoModel.findById(id).then((result) => {      
+                Todo.findById(id).then((result) => {
                     // //check DB against changes            
                     // expect(result.text).toBe(update.text);
                     // expect(result.completed).toBe(update.completed);
@@ -190,7 +195,7 @@ describe('PATCH /todos/:id', () => {
                     expect(result).toEqual(expect.objectContaining(update));
                     done();
                 }).catch((error) => {
-                    done(error); 
+                    done(error);
                 });
             });
     });
@@ -198,8 +203,8 @@ describe('PATCH /todos/:id', () => {
     it('should clear completedAt if todo is not completed', (done) => {
         var id = todos[1]._id.toHexString();
         var update = {
-            text:"Second text update",
-            completed: !todos[1].completed 
+            text: "Second text update",
+            completed: !todos[1].completed
         }
         request(app).patch(`/todos/${id}`)
             .send(update)
@@ -208,17 +213,17 @@ describe('PATCH /todos/:id', () => {
                 expect(res.body.todo._id).toEqual(id);
                 expect(res.body.todo).toEqual(expect.objectContaining(update));
             })
-            .end((err) => { 
+            .end((err) => {
                 if (err) {
                     done(err);
                 }
-                TodoModel.findById(id).then((result) => {
+                Todo.findById(id).then((result) => {
                     // expect(result).toMatchObject(update);  
                     expect(result).toEqual(expect.objectContaining(update));
                     expect(result.completedAt).toBeNull();
                     done();
                 }).catch((error) => {
-                    done(error); 
+                    done(error);
                 });
             });
     });
@@ -232,7 +237,7 @@ describe('PATCH /todos/:id', () => {
                     done(err);
                 }
                 expect(res.body.error_message)
-                    .toEqual("Dataset not found");      
+                    .toEqual("Dataset not found");
                 done();
             });
     });
@@ -244,10 +249,84 @@ describe('PATCH /todos/:id', () => {
             .end((err, res) => {
                 if (err) {
                     done(err);
-                } 
+                }
                 expect(res.body.error_message)
-                    .toEqual("ID is not valid");   
-                done();            
+                    .toEqual("ID is not valid");
+                done();
             });
+    });
+});
+
+describe('GET /users/me', () => {
+    it('should return user if authenticated', (done) => {
+        request(app)
+            .get('/users/me')
+            .set('x-auth', users[0].tokens[0].token)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body._id).toBe(users[0]._id.toHexString());
+                expect(res.body.email).toBe(users[0].email);
+            })
+            .end(done);
+    });
+
+    it('should retun a 401 if not authenticated', (done) => {
+        request(app).get('/users/me')
+            .expect(401)
+            .expect((res) => {
+                expect(res.body).toEqual({})
+            })
+            .end(done);
+    });
+});
+
+describe('POST /users', () => {
+    it('should create a user', (done) => {
+        var email = "derBeste@allerBesten.de";
+        var password = "einfachDerBeste";
+
+        request(app)
+            .post('/users')
+            .send({
+                email,
+                password
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.headers['x-auth']).toBeDefined();
+                expect(res.body._id).toBeDefined();
+                expect(res.body.email).toBe(email);
+            }).end((err)=>{
+                if(err){
+                    done(err);
+                }
+
+                User.find({email}).then((res) => {
+                    expect(res).toBeDefined();
+                    expect(res.password).not.toBe(password);
+                    done();
+                }).catch((err)=>done(err));
+            })
+    });
+
+    it('should return validation errors if request invalid', (done) => {
+        var email = "derBesteallerBesten.de";
+        var password = "abcd3";
+        request(app)
+            .post('/users')
+            .send({email, password})
+            .expect(400)
+            .end(done)
+
+    });
+
+    it('should not create a user if email in use', (done) => {
+        var email = users[0].email;
+        var password = "einfachDerBeste";
+        request(app)
+        .post('/users')
+        .send({email, password})
+        .expect(400)
+        .end(done)
     });
 });

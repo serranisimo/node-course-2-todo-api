@@ -46,7 +46,7 @@ UserSchema.methods.toJSON = function () {
 };
 
 /**
-middleware
+middleware for salting password
 */
 UserSchema.pre('save', function (next) {
     var user = this;
@@ -86,13 +86,14 @@ UserSchema.methods.generateAuthToken = function () {
 UserSchema.statics.findByToken = function(token){
     //this is a static method!!!! variable in Upper case
     var User = this;
+    var decoded;
     try{
-        var decoded = jwt.verify(token, secret_value);
+        decoded = jwt.verify(token, secret_value);
     } catch (e) {
         return Promise.reject();
         console.log(`Error while verifying jwt: ${e}`);
     }
-    return User.find({
+    return User.findOne({
         _id: decoded._id,
         'tokens.token': token,
         'tokens.access': 'auth'
