@@ -403,3 +403,33 @@ describe('POST /users/login', () => {
         });
     });
 });
+
+describe('DELETE /users/me/token', () => {
+    it('should remove auth token and log out', (done) => {
+        var token = users[0].tokens[0].token;
+        //DELETE request
+        request(app)
+            .delete('/users/me/token')
+            //set x-auth = token
+            .set('x-auth', token)
+            //200
+            .expect(200)
+            // find user and verify tokens.length === 0
+            /**
+             * Alternative: 
+             * .end((err, res)=>{
+             *      if(err) done(err);
+             *      User.findById(......
+             * });
+             * */
+            .expect(()=>{
+                User.findById(users[0]._id).then((user)=>{
+                    if(!user){
+                        Promise.reject();
+                    }
+                    expect(user.tokens.length).toBe(0);
+                }).catch((err) => done(err));    
+            }).end(done);
+
+    });
+});
