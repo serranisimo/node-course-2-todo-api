@@ -1,5 +1,9 @@
-var {User} = require('./../models/user');
-var {Todos} = require('./../models/todo');
+var {
+    User
+} = require('./../models/user');
+var {
+    Todos
+} = require('./../models/todo');
 var expect = require('expect');
 var request = require('supertest');
 var {
@@ -296,16 +300,18 @@ describe('POST /users', () => {
                 expect(res.headers['x-auth']).toBeDefined();
                 expect(res.body._id).toBeDefined();
                 expect(res.body.email).toBe(email);
-            }).end((err)=>{
-                if(err){
+            }).end((err) => {
+                if (err) {
                     done(err);
                 }
 
-                User.find({email}).then((res) => {
+                User.find({
+                    email
+                }).then((res) => {
                     expect(res).toBeDefined();
                     expect(res.password).not.toBe(password);
                     done();
-                }).catch((err)=>done(err));
+                }).catch((err) => done(err));
             })
     });
 
@@ -314,7 +320,10 @@ describe('POST /users', () => {
         var password = "abcd3";
         request(app)
             .post('/users')
-            .send({email, password})
+            .send({
+                email,
+                password
+            })
             .expect(400)
             .end(done)
 
@@ -324,9 +333,73 @@ describe('POST /users', () => {
         var email = users[0].email;
         var password = "einfachDerBeste";
         request(app)
-        .post('/users')
-        .send({email, password})
+            .post('/users')
+            .send({
+                email,
+                password
+            })
+            .expect(400)
+            .end(done)
+    });
+});
+
+describe('POST /users/login', () => {
+    it('should login user and return token', (done) => {
+        request(app)
+            .post('/users/login')
+            .send({
+                email: users[1].email,
+                password: users[1].password
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.headers["x-auth"]).toBeDefined();
+                expect(res.headers["x-auth"]).not.toBeNull();
+                /**
+                 * The second user of the seeded users has no tokens
+                 * THis line of code would make the test case fail
+                 */
+                // expect(res.headers["x-auth"]).not.toEqual(users[1].tokens[1].token);
+            }).end((err, res) => {
+                if (err) {
+                    done(err);
+                }
+                User.findById(users[1]._id).then((user) => {
+                    expect(user.tokens[user.tokens.length -1]).toEqual(
+                        expect.objectContaining({
+                            "access": "auth",
+                            "token": res.headers["x-auth"]
+                        }));
+                        done();
+                }).catch((err) => done(err));    
+                // done();            
+            });           
+    });
+
+    it('should reject invalid login', (done) => {
+        request(app)
+        .post('/users/login')
+        .send({
+            email: users[1].email,
+            password: users[1].password+"A"
+        })
         .expect(400)
-        .end(done)
+        .expect((res) => {
+            expect(res.headers["x-auth"]).toBeFalsy();
+            /**
+             * The second user of the seeded users has no tokens
+             * THis line of code would make the test case fail
+             */
+            // expect(res.headers["x-auth"]).not.toEqual(users[1].tokens[1].token);
+        }).end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            User.findById(users[1]._id).then((user) => {
+                expect(user.tokens.length).toBe(0);
+                done();
+            }).catch((err) => done(err));    
+            // done();            
+        });
     });
 });
