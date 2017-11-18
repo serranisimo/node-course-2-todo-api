@@ -17,10 +17,11 @@ mongoose.Promise = Promise;
 app.use(body_parser.json());
 app.use(body_parser.urlencoded({ extended: false }));
 
-app.post('/todos', (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
     // console.log(req.body);
     var todo = new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
 
     todo.save().then((result) => {
@@ -28,13 +29,15 @@ app.post('/todos', (req, res) => {
     }).catch((e) => res.status(400).send(e));
 });
 
-app.get('/todos', (req, res) => {
-    Todo.find().then((result) => {
+app.get('/todos',authenticate, (req, res) => {
+    Todo.find({
+        _creator: req.user._id
+    }).then((result) => {
         res.json({ todos: result });
     }).catch((e) => res.status(400).send(e));
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id',authenticate, (req, res) => {
     var id = req.params.id;
     //validate id => 404 => empty body
     var valid = ObjectID.isValid(id);
@@ -42,7 +45,13 @@ app.get('/todos/:id', (req, res) => {
         res.status(404).json({ error_message: "ID is not valid" });
     } else {
         //query db success (todo vs !todo(404)) vs errorr (400)
-        Todo.findById(id).then((todo) => {
+        Todo.findOne({
+            $and: [{
+                _id: new ObjectID(id)
+            }, {                
+                _creator: req.user._id
+            }]                
+        }).then((todo) => {
             //console.log("Requested item:\n", todo);
             if (todo === null) {
                 res.status(404).json({ error_message: "No maches found" });
@@ -55,12 +64,18 @@ app.get('/todos/:id', (req, res) => {
     }
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id',authenticate, (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         res.status(404).json({ error_message: "ID is not valid" });
     }
-    Todo.findByIdAndRemove(id).then((result) => {
+    Todo.findOneAndRemove({
+        $and: [{
+            _id: new ObjectID(id)
+        }, {                
+            _creator: req.user._id
+        }]                
+    }).then((result) => {
         if (result === null) {
             res.status(404).json({ error_message: "Dataset not found" });
         } else {
@@ -72,7 +87,7 @@ app.delete('/todos/:id', (req, res) => {
 
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id',authenticate, (req, res) => {
     var id = req.params.id;
     if (!ObjectID.isValid(id)) {
         res.status(404).json({ error_message: "ID is not valid" });
@@ -85,7 +100,13 @@ app.patch('/todos/:id', (req, res) => {
         body.completedAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+    Todo.findOneAndUpdate({
+        $and: [{
+            _id: new ObjectID(id)
+        }, {                
+            _creator: req.user._id
+        }]                
+    }, { $set: body }, { new: true })
         .then((result) => {
             if (result === null) {
                 res.status(404).json({ error_message: "Dataset not found" });

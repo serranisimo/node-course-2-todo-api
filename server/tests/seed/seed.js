@@ -1,6 +1,12 @@
-const {ObjectID} = require('mongodb');
-const {Todo} = require('./../../models/todo');
-const {User} = require('./../../models/user');
+const {
+    ObjectID
+} = require('mongodb');
+const {
+    Todo
+} = require('./../../models/todo');
+const {
+    User
+} = require('./../../models/user');
 const jwt = require('jsonwebtoken');
 
 const idOne = new ObjectID();
@@ -10,16 +16,13 @@ const users = [{
     _id: idOne,
     email: 'test1@tester.com',
     password: 'abc123',
-    tokens: [
-        {
-            access,
-            token: jwt.sign(
-                {
-                    _id: idOne.toHexString(), 
-                    access: 'auth'
-                }, "abc").toString()
-        }
-    ]
+    tokens: [{
+        access,
+        token: jwt.sign({
+            _id: idOne.toHexString(),
+            access: 'auth'
+        }, "abc").toString()
+    }]
 }, {
     _id: idTwo,
     email: 'test2@tester.com',
@@ -28,36 +31,37 @@ const users = [{
 }];
 const todos = [{
     _id: new ObjectID(),
-    text: 'First Todo'
+    text: 'First Todo',
+    _creator: idOne
 }, {
     _id: new ObjectID(),
     text: 'Second Todo',
     completed: true,
-    completedAt: 333
+    completedAt: 333,
+    _creator: idTwo
 }];
 
 const populateTodos = (done) => {
-    Todo.remove({}).then(()=>{
+    Todo.remove({}).then(() => {
         Todo.insertMany(todos);
-    }).then((result) => 
-    {
+    }).then((result) => {
         // todos[1].completedAt = result.completedAt;
         done()
     });
 };
 
-const populateUsers = (done) =>{
+const populateUsers = (done) => {
     User.remove({})
-    .then(()=>{
-        var user_one = new User(users[0]).save();
-        var user_two = new User(users[1]).save();
-        return Promise.all([user_one, user_two])
-        .then(()=> {
-            done();
+        .then(() => {
+            var user_one = new User(users[0]).save();
+            var user_two = new User(users[1]).save();
+            return Promise.all([user_one, user_two])
+                .then(() => {
+                    done();
+                });
+        }).catch((e) => {
+            console.log(e);
         });
-    }).catch((e)=>{
-        console.log(e);
-    });
 };
 
 module.exports = {
