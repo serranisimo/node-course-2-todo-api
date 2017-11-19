@@ -109,6 +109,21 @@ describe('GET /todos/:id', () => {
             });
     });
 
+    it('should not return todo doc', (done) => {
+        let id = todos[0]._id.toHexString();
+        request(app)
+            .get(`/todos/${id}`)
+            .set('x-auth', users[1].tokens[0].token)
+            .expect(404)
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+                expect(res.body.todo).toBeUndefined();
+                done();
+            });
+    });
+
     it('should return 404 if resource not found', (done) => {
         let id = "5123321321564a";
         request(app)
@@ -143,6 +158,24 @@ describe('DELETE /todos/:id', () => {
                 }
                 Todo.findById(id).then((result) => {
                     expect(result).toBeNull();
+                    done();
+                }).catch((error) => {
+                    done(error);
+                });
+            });
+    });
+
+    it('should not remove a todo of another user', (done) => {
+        var id = todos[0]._id.toHexString();
+        request(app).delete(`/todos/${id}`)
+            .set('x-auth', users[1].tokens[0].token)
+            .expect(404)
+            .end((err) => {
+                if (err) {
+                    done(err);
+                }
+                Todo.findById(id).then((result) => {
+                    expect(result).toBeTruthy();
                     done();
                 }).catch((error) => {
                     done(error);
@@ -216,6 +249,32 @@ describe('PATCH /todos/:id', () => {
             });
     });
 
+    it('should not update a todo', (done) => {
+        var id = todos[0]._id.toHexString();
+        var update = {
+            text: "Update test",
+            completed: true
+        };
+        request(app)
+            .patch(`/todos/${id}`)
+            .set('x-auth', users[1].tokens[0].token)
+            .send(update)
+            .expect(404)
+            .expect((res) => { //check response
+                expect(res.body.todo).toBeUndefined();
+            })
+            .end((err) => {
+                if (err) {
+                    done(err);
+                }
+                Todo.findById(id).then((result) => {
+                    expect(result).not.toEqual(expect.objectContaining(update));
+                    done();
+                }).catch((error) => {
+                    done(error);
+                });
+            });
+    });
     it('should clear completedAt if todo is not completed', (done) => {
         var id = todos[0]._id.toHexString();
         var update = {
@@ -392,6 +451,7 @@ describe('POST /users/login', () => {
     });
 
     it('should reject invalid login', (done) => {
+        var beforeTokenLength = users[1].tokens.length;
         request(app)
         .post('/users/login')
         .send({
@@ -411,7 +471,7 @@ describe('POST /users/login', () => {
                 done(err);
             }
             User.findById(users[1]._id).then((user) => {
-                expect(user.tokens.length).toBe(0);
+                expect(user.tokens.length).toBe(beforeTokenLength);
                 done();
             }).catch((err) => done(err));    
             // done();            
