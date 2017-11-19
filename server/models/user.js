@@ -5,7 +5,7 @@ const _ = require('lodash');
 const bcrypt = require('bcryptjs');         
 
 
-const secret_value = "abc";
+const secret_value = process.env.JWT_SECRET;
 
 var Schema = mongoose.Schema;
 var UserSchema = new Schema({

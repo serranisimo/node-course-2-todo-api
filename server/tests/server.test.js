@@ -1,3 +1,4 @@
+require('./../../config/config');
 var {
     User
 } = require('./../models/user');

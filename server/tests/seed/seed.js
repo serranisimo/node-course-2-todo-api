@@ -12,6 +12,8 @@ const jwt = require('jsonwebtoken');
 const idOne = new ObjectID();
 const idTwo = new ObjectID();
 var access = 'auth';
+var secret = process.env.JWT_SECRET;
+
 const users = [{
     _id: idOne,
     email: 'test1@tester.com',
@@ -21,7 +23,7 @@ const users = [{
         token: jwt.sign({
             _id: idOne.toHexString(),
             access: 'auth'
-        }, "abc").toString()
+        }, secret).toString()
     }]
 }, {
     _id: idTwo,
@@ -32,7 +34,7 @@ const users = [{
         token: jwt.sign({
             _id: idTwo.toHexString(),
             access: 'auth'
-        }, "abc").toString()
+        }, secret).toString()
     }]
 
 }];
