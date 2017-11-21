@@ -105,7 +105,7 @@ describe('GET /todos/:id', () => {
                 if (err) {
                     return done(err);
                 }
-                expect(res.body.todo.text).toEqual(todos[0].text);
+                expect(res.body.todo.text).toBe(todos[0].text);
                 done();
             });
     });
@@ -158,7 +158,7 @@ describe('DELETE /todos/:id', () => {
                     done(err);
                 }
                 Todo.findById(id).then((result) => {
-                    expect(result).toBeNull();
+                    expect(result).toBeFalsy();
                     done();
                 }).catch((error) => {
                     done(error);
@@ -297,7 +297,7 @@ describe('PATCH /todos/:id', () => {
                 Todo.findById(id).then((result) => {
                     // expect(result).toMatchObject(update);  
                     expect(result).toEqual(expect.objectContaining(update));
-                    expect(result.completedAt).toBeNull();
+                    expect(result.completedAt).toBeFalsy();
                     done();
                 }).catch((error) => {
                     done(error);
@@ -372,8 +372,8 @@ describe('POST /users', () => {
             })
             .expect(200)
             .expect((res) => {
-                expect(res.headers['x-auth']).toBeDefined();
-                expect(res.body._id).toBeDefined();
+                expect(res.headers['x-auth']).toBeTruthy();
+                expect(res.body._id).toBeTruthy();
                 expect(res.body.email).toBe(email);
             }).end((err) => {
                 if (err) {
@@ -382,9 +382,9 @@ describe('POST /users', () => {
 
                 User.find({
                     email
-                }).then((res) => {
-                    expect(res).toBeDefined();
-                    expect(res.password).not.toBe(password);
+                }).then((user) => {
+                    expect(user).toBeTruthy();
+                    expect(user.password).not.toBe(password);
                     done();
                 }).catch((err) => done(err));
             })
@@ -428,8 +428,8 @@ describe('POST /users/login', () => {
             })
             .expect(200)
             .expect((res) => {
-                expect(res.headers["x-auth"]).toBeDefined();
-                expect(res.headers["x-auth"]).not.toBeNull();
+                expect(res.headers["x-auth"]).toBeTruthy();
+                expect(res.headers["x-auth"]).toBeTruthy();
                 /**
                  * The second user of the seeded users has no tokens
                  * THis line of code would make the test case fail
@@ -440,11 +440,18 @@ describe('POST /users/login', () => {
                     done(err);
                 }
                 User.findById(users[1]._id).then((user) => {
-                    expect(user.tokens[user.tokens.length -1]).toEqual(
-                        expect.objectContaining({
-                            "access": "auth",
-                            "token": res.headers["x-auth"]
-                        }));
+                    /**
+                     * The new version of expect cannot parse all the information out of
+                     * the mongoose object. By calling the method "toObject()" all the raw user data
+                     * of the object are selected but without the mongoose specific methods and properties
+                     */console.log(user); console.log(user.toObject())
+                    expect(user.tokens[user.tokens.length -1].toObject())
+                        .toMatchObject(
+                            {
+                                access: "auth",
+                                token: res.headers["x-auth"]
+                            }
+                        );
                         done();
                 }).catch((err) => done(err));    
                 // done();            
